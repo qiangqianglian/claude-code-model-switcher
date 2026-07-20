@@ -1,0 +1,8 @@
+unpackage/*
+!unpackage/res/
+!unpackage/debug/
+node_modules
+.hbuilderx
+.idea
+.cline
+.clinerules

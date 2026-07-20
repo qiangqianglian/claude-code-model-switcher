@@ -1,0 +1,20 @@
+{
+  "name": "cc-model-switcher",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "纯前端网站：管理和切换 Claude Code 的模型配置",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}

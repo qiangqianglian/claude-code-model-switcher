@@ -1,0 +1,19 @@
+
+> cc-model-switcher@1.0.0 dev
+> vite
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m424[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m13:28:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
+[2m14:00:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/components/PresetForm.jsx[22m
+[2m14:01:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
+[2m14:02:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PresetForm.jsx[22m
+[2m14:02:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PresetCard.jsx[22m
+[2m14:03:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ActivePanel.jsx[22m
+[2m14:04:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
+[2m14:05:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.css[22m
+[2m14:05:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.css[22m
+[2m14:22:07[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
+[2m14:22:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
