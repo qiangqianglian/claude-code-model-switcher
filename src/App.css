@@ -53,24 +53,6 @@ body {
 .banner-info { background: #eef2ff; color: var(--primary-d); border: 1px solid #d6e0ff; }
 .banner code { background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 4px; }
 
-/* connect bar */
-.connect-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 16px;
-  margin-bottom: 18px;
-}
-.connect-bar.connected { border-color: var(--green); background: var(--green-bg); }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); flex: none; }
-.dot.dot-warn { background: var(--warn); }
-.dot.dot-off { background: #c4c9d2; }
-.connect-text { flex: 1; }
-.connect-text code { background: rgba(0,0,0,.06); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
-
 /* active panel */
 .active-panel {
   background: var(--card);

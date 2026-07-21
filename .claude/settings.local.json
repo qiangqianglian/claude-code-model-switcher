@@ -5,7 +5,21 @@
       "Edit",
       "Write",
       "Read",
-      "Read(//c/Users/qiang/.claude/**)"
+      "Read(//c/Users/qiang/.claude/**)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(npm install *)",
+      "Bash(grep -E \"^\\(electron-builder|concurrently|wait-on|cross-env|vite\\)$\")",
+      "Bash(npx electron *)",
+      "Bash(timeout 30 npx electron .)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(unset ELECTRON_RUN_AS_NODE)",
+      "Bash(env -u ELECTRON_RUN_AS_NODE timeout 20 npx electron .)",
+      "Bash(node -e ' *)",
+      "Bash(rm -f .electron-dev.log)",
+      "Bash(npm run *)",
+      "Bash(npx vite *)",
+      "Bash(taskkill //F //IM electron.exe)",
+      "Bash(env -u ELECTRON_RUN_AS_NODE timeout 12 npx electron .)"
     ]
   },
   "permission-mode": "bypassPermissions",

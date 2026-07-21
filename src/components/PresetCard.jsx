@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function PresetCard({ preset, active, connected, busy, onActivate, onEdit, onDelete }) {
+export default function PresetCard({ preset, active, busy, onActivate, onEdit, onDelete }) {
   const isActivePreset = active?.presetId === preset.id
   const activeModel = isActivePreset ? active?.model : null
 
@@ -22,8 +22,7 @@ export default function PresetCard({ preset, active, connected, busy, onActivate
               key={m}
               className={`btn-model ${isCur ? 'is-cur' : ''}`}
               onClick={() => onActivate(preset, m)}
-              disabled={!connected || busy}
-              title={!connected ? '请先连接文件夹' : ''}
+              disabled={busy}
             >
               {isCur && <span className="cur-dot">●</span>}
               {m}

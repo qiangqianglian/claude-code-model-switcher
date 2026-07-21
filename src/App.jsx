@@ -1,31 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import {
-  isSupported,
-  pickFolder,
-  restoreFolder,
-  forgetFolder,
-  getPermission,
-  requestPermission,
-  readSettings,
-  backupAndActivate,
-  detectActive
-} from './api/fs.js'
-import {
-  loadPresets,
-  createPreset,
-  updatePreset,
-  deletePreset,
-  makeEnv
-} from './api/presets.js'
-import FolderConnect from './components/FolderConnect.jsx'
+import { listPresets, createPreset, updatePreset, deletePreset } from './api/presets.js'
+import { readStatus, activate } from './api/settings.js'
 import ActivePanel from './components/ActivePanel.jsx'
 import PresetCard from './components/PresetCard.jsx'
 import PresetForm from './components/PresetForm.jsx'
 
 export default function App() {
-  const [supported] = useState(isSupported())
-  const [dirHandle, setDirHandle] = useState(null)
-  const [permission, setPermission] = useState('prompt')
   const [presets, setPresets] = useState([])
   const [currentEnv, setCurrentEnv] = useState(null) // 当前 settings.json 的 env
   const [active, setActive] = useState(null)        // { presetId, model, known } | null
@@ -34,85 +14,35 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState('')
 
-  // 初次加载：预设 + 恢复目录句柄
-  useEffect(() => {
-    setPresets(loadPresets())
-    ;(async () => {
-      const h = await restoreFolder()
-      if (h) {
-        setDirHandle(h)
-        setPermission(await getPermission(h))
-      }
-    })()
+  const refresh = useCallback(async () => {
+    const [list, status] = await Promise.all([listPresets(), readStatus()])
+    setPresets(list)
+    setCurrentEnv(status.env)
+    setActive(status.active)
+    if (status.error && status.error !== 'web-mode') setError(status.error)
   }, [])
 
-  const refreshActive = useCallback(async (handle) => {
-    if (!handle) return
-    try {
-      const settings = await readSettings(handle)
-      setCurrentEnv(settings.env || {})
-    } catch (e) {
-      setCurrentEnv(null)
-    }
-    const a = await detectActive(handle, loadPresets())
-    setActive(a)
-  }, [])
-
-  // 权限/句柄变化时刷新当前生效
   useEffect(() => {
-    if (dirHandle && permission === 'granted') {
-      refreshActive(dirHandle)
-    } else {
-      setCurrentEnv(null)
-      setActive(null)
-    }
-  }, [dirHandle, permission, refreshActive])
+    refresh()
+  }, [refresh])
 
   function flash(msg) {
     setToast(msg)
     setTimeout(() => setToast(''), 2500)
   }
 
-  async function handleConnect() {
-    setError('')
-    try {
-      const h = await pickFolder()
-      setDirHandle(h)
-      setPermission(await getPermission(h))
-      flash('已连接文件夹')
-    } catch (e) {
-      if (e?.name !== 'AbortError') setError('连接失败：' + (e.message || e))
-    }
-  }
-
-  async function handleRegrant() {
-    if (!dirHandle) return
-    const p = await requestPermission(dirHandle)
-    setPermission(p)
-    if (p !== 'granted') setError('未授予写权限，无法切换配置')
-  }
-
-  async function handleDisconnect() {
-    await forgetFolder()
-    setDirHandle(null)
-    setPermission('prompt')
-    setCurrentEnv(null)
-    setActive(null)
-    flash('已断开连接')
-  }
-
-  // 点某个模型按钮：用该模型 ID 构造 env 并写入 settings.json
+  // 点某个模型按钮：主进程备份 + 写入 settings.json
   async function handleActivate(preset, modelId) {
     setError('')
-    if (!dirHandle || permission !== 'granted') {
-      setError('请先连接并授权 .claude 文件夹')
-      return
-    }
     setBusy(true)
     try {
-      const env = makeEnv({ baseUrl: preset.baseUrl, authToken: preset.authToken, model: modelId })
-      await backupAndActivate(dirHandle, env)
-      await refreshActive(dirHandle)
+      const status = await activate({
+        baseUrl: preset.baseUrl,
+        authToken: preset.authToken,
+        model: modelId
+      })
+      setCurrentEnv(status.env)
+      setActive(status.active)
       flash(`已激活：${preset.name} · ${modelId}`)
     } catch (e) {
       setError('激活失败：' + (e.message || e))
@@ -121,21 +51,33 @@ export default function App() {
     }
   }
 
-  function handleSaveForm(data) {
-    if (editing && editing.id) {
-      setPresets(updatePreset(presets, editing.id, data))
-      if (dirHandle && permission === 'granted') refreshActive(dirHandle)
-      flash('已保存修改')
-    } else {
-      setPresets(createPreset(presets, data))
-      flash('已新建配置')
+  async function handleSaveForm(data) {
+    setError('')
+    try {
+      if (editing && editing.id) {
+        const next = await updatePreset(editing.id, data)
+        setPresets(next)
+        flash('已保存修改')
+      } else {
+        const next = await createPreset(data)
+        setPresets(next)
+        flash('已新建配置')
+      }
+      // 重新检测当前生效（预设改动可能影响匹配）
+      const status = await readStatus()
+      setActive(status.active)
+    } catch (e) {
+      setError('保存失败：' + (e.message || e))
     }
     setEditing(null)
   }
 
-  function handleDelete(preset) {
+  async function handleDelete(preset) {
     if (!window.confirm(`确定删除「${preset.name}」？此操作不可撤销。`)) return
-    setPresets(deletePreset(presets, preset.id))
+    const next = await deletePreset(preset.id)
+    setPresets(next)
+    const status = await readStatus()
+    setActive(status.active)
     flash('已删除')
   }
 
@@ -151,30 +93,12 @@ export default function App() {
     })
   }
 
-  const connected = dirHandle && permission === 'granted'
-
   return (
     <div className="app">
       <header className="app-header">
         <h1>Claude Code 模型配置切换</h1>
-        <p className="subtitle">本地纯前端 · 数据不出本机</p>
+        <p className="subtitle">桌面端 · 直接读写 ~/.claude/settings.json · 数据存在本机</p>
       </header>
-
-      {!supported && (
-        <div className="banner banner-error">
-          当前浏览器不支持 File System Access API。请用 <b>Edge</b> 或 <b>Chrome</b> 打开
-          <code>http://localhost:5173</code>（不要用 file:// 直接打开）。
-        </div>
-      )}
-
-      <FolderConnect
-        dirHandle={dirHandle}
-        permission={permission}
-        onConnect={handleConnect}
-        onRegrant={handleRegrant}
-        onDisconnect={handleDisconnect}
-        disabled={!supported}
-      />
 
       {error && <div className="banner banner-error">{error}</div>}
       {toast && <div className="banner banner-info">{toast}</div>}
@@ -196,7 +120,7 @@ export default function App() {
 
         {presets.length === 0 ? (
           <div className="empty">
-            还没有配置。点击「新建配置」，或先连接文件夹后用「从当前 settings.json 导入」。
+            还没有配置。点击「新建配置」，或用「从当前 settings.json 导入」一键生成预设。
           </div>
         ) : (
           <div className="preset-grid">
@@ -205,7 +129,6 @@ export default function App() {
                 key={p.id}
                 preset={p}
                 active={active}
-                connected={connected}
                 busy={busy}
                 onActivate={handleActivate}
                 onEdit={() => setEditing(p)}

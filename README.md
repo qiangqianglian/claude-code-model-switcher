@@ -1,38 +1,38 @@
-# CC 模型配置切换（纯前端）
+# CC 模型配置切换（Electron 桌面端）
 
-本地网站，用于管理并一键切换 Claude Code 的模型配置（写入 `~/.claude/settings.json` 的 `env` 块）。零后端代码。
+桌面应用，用于管理并一键切换 Claude Code 的模型配置（写入 `~/.claude/settings.json` 的 `env` 块）。主进程用 Node `fs` 直接读写，无需启动任何服务、无浏览器授权弹窗。
 
-## 浏览器要求
+## 功能
 
-- 必须用 **Edge 或 Chrome**（需要 File System Access API）
-- 必须通过 `http://localhost` 访问，**不要直接双击 HTML 用 file:// 打开**（API 在 file:// 下不可用）
+- 新建 / 编辑 / 删除 多套配置预设（存在 `userData/presets.json`）
+- 一条配置可挂**多个模型 ID**，卡片上每个模型一个按钮，**点哪个激活哪个**
+- 激活时自动备份原文件到 `~/.claude/backups/`，再替换 `env`（保留 `permissions`、`effortLevel` 等）
+- 自动识别并高亮「当前生效」的配置 + 模型
 
-## 启动
+## 开发
 
 ```bash
 cd e:\my\ai\更换当前cc的模型网站
 npm install
-npm run dev
+npm run dev        # 同时起 Vite + Electron，热更新
 ```
 
-浏览器打开 `http://localhost:5173`。
+仅需调试前端（不开 Electron）：`npm run dev:web`，浏览器开 `http://localhost:5173`（此模式下激活不可用，预设退化为 localStorage）。
 
-## 使用
-
-1. 点「选择 .claude 文件夹」→ 选中 `C:\Users\<你>\.claude` → 浏览器弹窗允许读写权限
-2. 顶部会显示当前 `settings.json` 的 env 概览（Token 默认打码）
-3. 「+ 新建配置」填入预设（或先连接后用「从当前 settings.json 导入」一键生成预设）
-4. 列表里点某张卡片的「激活」→ 自动备份原文件到 `backups\` 并替换 `env`，保留 `permissions`、`effortLevel` 等其它字段
-
-## 数据存储
-
-- 预设：浏览器 `localStorage`
-- 目录授权句柄：`IndexedDB`（刷新页面无需重选目录，只需再点一次按钮授予权限）
-- 切换前自动备份：`~/.claude/backups/settings-YYYYMMDD-HHmmss.json`
-
-## 构建
+## 打包成 .exe
 
 ```bash
-npm run build      # 产物在 dist/
-npm run preview    # 预览构建结果（仍需 http://localhost 访问）
+npm run package      # vite build + electron-builder
 ```
+
+产物在 `release/CC模型配置切换.exe`（portable，双击即用，无需安装）。
+
+如需生成安装版，把 `package.json` 里 `build.win.target` 改为 `["nsis"]`。
+
+## 数据位置
+
+- 预设：`C:\Users\<你>\AppData\Roaming\cc-model-switcher\presets.json`
+- 目标文件：`C:\Users\<你>\.claude\settings.json`
+- 备份：`C:\Users\<你>\.claude\backups\settings-YYYYMMDD-HHmmss.json`
+
+> 切换配置只影响**新开的** Claude Code 会话，当前正在运行的会话不会中途换模型。
