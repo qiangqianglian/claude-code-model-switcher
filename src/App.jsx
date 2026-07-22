@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { listPresets, createPreset, updatePreset, deletePreset } from './api/presets.js'
-import { readStatus, activate } from './api/settings.js'
+import { readStatus, activate, pathInfo, pickFile, resetPath } from './api/settings.js'
 import ActivePanel from './components/ActivePanel.jsx'
 import PresetCard from './components/PresetCard.jsx'
 import PresetForm from './components/PresetForm.jsx'
@@ -9,16 +9,18 @@ export default function App() {
   const [presets, setPresets] = useState([])
   const [currentEnv, setCurrentEnv] = useState(null) // 当前 settings.json 的 env
   const [active, setActive] = useState(null)        // { presetId, model, known } | null
+  const [settingsPath, setSettingsPath] = useState(null)  // { path, isDefault } | null
   const [editing, setEditing] = useState(null)      // null | 'new' | preset对象
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState('')
 
   const refresh = useCallback(async () => {
-    const [list, status] = await Promise.all([listPresets(), readStatus()])
+    const [list, status, pi] = await Promise.all([listPresets(), readStatus(), pathInfo()])
     setPresets(list)
     setCurrentEnv(status.env)
     setActive(status.active)
+    setSettingsPath(pi)
     if (status.error && status.error !== 'web-mode') setError(status.error)
   }, [])
 
@@ -93,6 +95,25 @@ export default function App() {
     })
   }
 
+  async function handlePickFile() {
+    setError('')
+    try {
+      const res = await pickFile()
+      if (res) {
+        await refresh()
+        flash('已切换到：' + res.path)
+      }
+    } catch (e) {
+      setError('选择文件失败：' + (e.message || e))
+    }
+  }
+
+  async function handleResetPath() {
+    await resetPath()
+    await refresh()
+    flash('已恢复默认路径')
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -107,6 +128,9 @@ export default function App() {
         currentEnv={currentEnv}
         active={active}
         presets={presets}
+        pathInfo={settingsPath}
+        onPickFile={handlePickFile}
+        onResetPath={handleResetPath}
         onImport={handleImportCurrent}
       />
 

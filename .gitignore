@@ -7,3 +7,7 @@ node_modules
 .cline
 .clinerules
 dist
+release
+data
+.dev*.log
+.electron*.log

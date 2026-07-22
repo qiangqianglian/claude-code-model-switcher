@@ -9,8 +9,8 @@
     "dev": "concurrently -k -n VITE,ELECTRON -c green,blue \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 node scripts/launch-electron.cjs\"",
     "dev:web": "vite",
     "build": "vite build",
-    "package": "vite build && electron-builder",
-    "package:win": "vite build && electron-builder --win"
+    "package": "node scripts/package.cjs",
+    "package:raw": "vite build && electron-builder"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -34,11 +34,8 @@
     ],
     "win": {
       "target": [
-        "portable"
+        "dir"
       ]
-    },
-    "portable": {
-      "artifactName": "CC模型配置切换.exe"
     },
     "directories": {
       "output": "release"

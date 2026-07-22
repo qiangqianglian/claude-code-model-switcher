@@ -1,13 +1,11 @@
-// Electron 主进程：窗口 + IPC（直接用 Node fs 读写 ~/.claude/settings.json 和 presets.json）
-const { app, BrowserWindow, ipcMain } = require('electron')
+// Electron 主进程：窗口 + IPC（直接用 Node fs 读写 settings.json 和 presets.json）
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
 const crypto = require('crypto')
 
-const CLAUDE_DIR = path.join(os.homedir(), '.claude')
-const SETTINGS_FILE = path.join(CLAUDE_DIR, 'settings.json')
-const BACKUPS_DIR = path.join(CLAUDE_DIR, 'backups')
+const DEFAULT_SETTINGS_FILE = path.join(os.homedir(), '.claude', 'settings.json')
 
 // 6 个 *_MODEL 字段统一填同一个模型 ID
 const MODEL_FIELDS = [
@@ -28,8 +26,66 @@ function makeEnv({ baseUrl, authToken, model }) {
   return env
 }
 
+// ---------- 数据目录：跟随程序，而非 AppData ----------
+// - portable 打包：PORTABLE_EXECUTABLE_DIR 由 electron-builder 注入，指向真实 .exe 所在目录
+// - 其它打包（nsis/dir）：用 .exe 所在目录
+// - dev：项目根目录（app.getAppPath()）
+// 数据放在该目录下的 data/ 子目录，与程序同行，方便可见/备份/携带
+function getDataRoot() {
+  if (process.env.PORTABLE_EXECUTABLE_DIR) return process.env.PORTABLE_EXECUTABLE_DIR
+  if (!app.isPackaged) return app.getAppPath()
+  return path.dirname(process.execPath)
+}
+function getDataDir() {
+  return path.join(getDataRoot(), 'data')
+}
 function presetsPath() {
-  return path.join(app.getPath('userData'), 'presets.json')
+  return path.join(getDataDir(), 'presets.json')
+}
+function configPath() {
+  return path.join(getDataDir(), 'config.json')
+}
+
+// 一次性迁移：把旧版本存在 userData 的数据搬到新位置（若新位置尚无数据）
+function migrateFromUserData() {
+  const userData = app.getPath('userData')
+  const dest = getDataDir()
+  let moved = false
+  for (const name of ['presets.json', 'config.json']) {
+    const src = path.join(userData, name)
+    const dst = path.join(dest, name)
+    if (!fs.existsSync(dst) && fs.existsSync(src)) {
+      fs.mkdirSync(dest, { recursive: true })
+      try {
+        fs.copyFileSync(src, dst)
+        moved = true
+      } catch {
+        /* 忽略单个文件迁移失败 */
+      }
+    }
+  }
+  return moved
+}
+
+// config.json：{ settingsPath: string | null }（null=用默认 ~/.claude/settings.json）
+function readConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(configPath(), 'utf-8')) || {}
+  } catch {
+    return {}
+  }
+}
+function writeConfig(obj) {
+  fs.mkdirSync(path.dirname(configPath()), { recursive: true })
+  fs.writeFileSync(configPath(), JSON.stringify(obj, null, 2), 'utf-8')
+}
+
+function getSettingsPath() {
+  const cfg = readConfig()
+  return cfg.settingsPath || DEFAULT_SETTINGS_FILE
+}
+function getBackupsDir() {
+  return path.join(path.dirname(getSettingsPath()), 'backups')
 }
 
 // ---------- 预设 CRUD（presets.json） ----------
@@ -71,15 +127,17 @@ function presetFromData(data, base = {}) {
 // ---------- settings.json 读写 ----------
 
 function readSettings() {
-  const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8')
+  const file = getSettingsPath()
+  const raw = fs.readFileSync(file, 'utf-8')
   return JSON.parse(raw)
 }
 
 function writeSettings(obj) {
+  const file = getSettingsPath()
   // 原子写入：先写临时文件再 rename
-  const tmp = SETTINGS_FILE + '.tmp'
+  const tmp = file + '.tmp'
   fs.writeFileSync(tmp, JSON.stringify(obj, null, 2), 'utf-8')
-  fs.renameSync(tmp, SETTINGS_FILE)
+  fs.renameSync(tmp, file)
 }
 
 function timestamp() {
@@ -94,8 +152,9 @@ function timestamp() {
 // 备份当前 settings.json，再用新 env 覆盖（保留其它字段）
 function backupAndActivate(env) {
   const current = readSettings()
-  fs.mkdirSync(BACKUPS_DIR, { recursive: true })
-  const backupFile = path.join(BACKUPS_DIR, `settings-${timestamp()}.json`)
+  const backupsDir = getBackupsDir()
+  fs.mkdirSync(backupsDir, { recursive: true })
+  const backupFile = path.join(backupsDir, `settings-${timestamp()}.json`)
   fs.writeFileSync(backupFile, JSON.stringify(current, null, 2), 'utf-8')
   const next = { ...current, env: { ...env } }
   writeSettings(next)
@@ -164,6 +223,32 @@ ipcMain.handle('settings:activate', (_e, { baseUrl, authToken, model }) => {
   return readStatus()
 })
 
+// 当前使用的 settings.json 路径信息
+ipcMain.handle('settings:pathInfo', () => {
+  const p = getSettingsPath()
+  return { path: p, isDefault: p === DEFAULT_SETTINGS_FILE }
+})
+
+// 弹文件选择框让用户选一个 settings.json，记住选择
+ipcMain.handle('settings:pickFile', async () => {
+  const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
+  const res = await dialog.showOpenDialog(win, {
+    title: '选择 settings.json',
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  })
+  if (res.canceled || !res.filePaths.length) return null
+  const picked = res.filePaths[0]
+  writeConfig({ ...readConfig(), settingsPath: picked })
+  return { path: picked, isDefault: false }
+})
+
+// 恢复默认路径
+ipcMain.handle('settings:resetPath', () => {
+  writeConfig({ ...readConfig(), settingsPath: null })
+  return { path: DEFAULT_SETTINGS_FILE, isDefault: true }
+})
+
 // ---------- 窗口 ----------
 
 function createWindow() {
@@ -191,6 +276,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // 先把旧版本（userData）的数据搬到程序目录，再开窗口
+  migrateFromUserData()
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -79,6 +79,19 @@ body {
 .active-grid .val.mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 12px; }
 .active-actions { margin-top: 14px; }
 
+/* 路径条 */
+.path-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.path-text { word-break: break-all; }
+.path-text.path-custom { color: var(--warn); font-weight: 600; }
+
 .link {
   background: none;
   border: none;

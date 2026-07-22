@@ -19,7 +19,14 @@
       "Bash(npm run *)",
       "Bash(npx vite *)",
       "Bash(taskkill //F //IM electron.exe)",
-      "Bash(env -u ELECTRON_RUN_AS_NODE timeout 12 npx electron .)"
+      "Bash(env -u ELECTRON_RUN_AS_NODE timeout 12 npx electron .)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts, null, 2\\)\\)\")",
+      "Bash(export ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/)",
+      "Bash(export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/)",
+      "Bash(cd \"e:/my/ai/更换当前cc的模型网站\" *)",
+      "Read(//c/Users/qiang/AppData/Local/electron-builder/Cache/winCodeSign/**)",
+      "Read(//c/Users/qiang/AppData/Local/electron-builder/Cache/winCodeSign/980546303/**)",
+      "Read(//c/Users/qiang/AppData/Local/electron-builder/Cache/**)"
     ]
   },
   "permission-mode": "bypassPermissions",

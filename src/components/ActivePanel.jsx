@@ -8,15 +8,39 @@ function mask(token) {
 }
 
 // active = { presetId, model, known } | null ; presets 用于查预设名
-export default function ActivePanel({ currentEnv, active, presets, onImport }) {
+// pathInfo = { path, isDefault } | null
+export default function ActivePanel({ currentEnv, active, presets, pathInfo, onPickFile, onResetPath, onImport }) {
   const [showToken, setShowToken] = useState(false)
   const matched = active ? presets.find((p) => p.id === active.presetId) : null
+
+  const path = pathInfo?.path
+  const isDefault = pathInfo?.isDefault ?? true
+
+  // 路径过长时截断中段
+  function shortPath(p) {
+    if (!p) return ''
+    if (p.length <= 56) return p
+    return p.slice(0, 24) + '…' + p.slice(-28)
+  }
+
+  const pathBar = (
+    <div className="path-bar">
+      <span className={`path-text ${isDefault ? '' : 'path-custom'}`} title={path || ''}>
+        {isDefault ? '默认：' : '自定义：'}{shortPath(path)}
+      </span>
+      <button className="link" onClick={onPickFile}>更改…</button>
+      {!isDefault && <button className="link" onClick={onResetPath}>恢复默认</button>}
+    </div>
+  )
 
   if (!currentEnv) {
     return (
       <div className="active-panel muted">
-        <div className="active-title">当前生效配置</div>
-        <div>连接 .claude 文件夹后，这里会显示当前 settings.json 的内容。</div>
+        <div className="active-head">
+          <div className="active-title">当前生效配置</div>
+        </div>
+        {pathBar}
+        <div>读取 settings.json 失败或为空。{!isDefault && '可点「恢复默认」换回默认文件，或重新「更改…」。'}</div>
       </div>
     )
   }
@@ -39,6 +63,7 @@ export default function ActivePanel({ currentEnv, active, presets, onImport }) {
           <span className="tag tag-warn">未匹配已保存预设</span>
         )}
       </div>
+      {pathBar}
       <div className="active-grid">
         <div><label>Base URL</label><div className="val">{url || '（未设置）'}</div></div>
         <div><label>Model</label><div className="val">{model || '（不一致或未设置）'}</div></div>

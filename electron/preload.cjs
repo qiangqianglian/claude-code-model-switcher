@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('api', {
   settings: {
     status: () => ipcRenderer.invoke('settings:status'),
     activate: ({ baseUrl, authToken, model }) =>
-      ipcRenderer.invoke('settings:activate', { baseUrl, authToken, model })
+      ipcRenderer.invoke('settings:activate', { baseUrl, authToken, model }),
+    pathInfo: () => ipcRenderer.invoke('settings:pathInfo'),
+    pickFile: () => ipcRenderer.invoke('settings:pickFile'),
+    resetPath: () => ipcRenderer.invoke('settings:resetPath')
   }
 })
