@@ -11,3 +11,8 @@ release
 data
 .dev*.log
 .electron*.log
+
+# OfficeAce 治理 / 本地工具产物
+.office-claw/
+.claude/
+.agent_history/
