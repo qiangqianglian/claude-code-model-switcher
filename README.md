@@ -12,6 +12,7 @@
 
 - [为什么需要它](#为什么需要它)
 - [核心特性](#核心特性)
+- [界面预览](#界面预览)
 - [技术栈](#技术栈)
 - [快速开始（开发）](#快速开始开发)
 - [打包成可执行文件](#打包成可执行文件)
@@ -39,6 +40,10 @@ Claude Code 通过 `~/.claude/settings.json` 的 `env` 块决定「连哪个中�
 - **当前状态高亮**：自动识别并高亮「当前生效」的预设与模型；若当前模型不在任何预设里，会明确提示。
 - **自定义配置文件路径**：可指定使用哪个 `settings.json`（默认 `~/.claude/settings.json`），方便多环境 / 多账号切换。
 - **一键导入**：可把当前 `settings.json` 的配置直接导入为一个新预设。
+
+## 界面预览
+
+![界面预览](./docs/screenshots/screenshot.png)
 
 ## 技术栈
 
@@ -112,7 +117,7 @@ npm run package      # vite build + electron-builder
 ├── scripts/
 │   ├── launch-electron.cjs
 │   └── package.cjs
-├── docs/               # 项目文档（SOP 等）
+├── docs/               # 项目文档（SOP 等）与界面截图
 ├── data/               # 运行时数据（已被 .gitignore 忽略）
 ├── index.html
 ├── vite.config.js
@@ -144,4 +149,4 @@ npm run package      # vite build + electron-builder
 
 ## License
 
-尚未指定。如需开源，可在此补充 `MIT` 等许可证。
+本项目基于 [MIT License](./LICENSE) 开源。
